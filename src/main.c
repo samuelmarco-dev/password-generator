@@ -24,6 +24,7 @@
 #define DEFAULT 25
 #define VERYSTRONG_MAX 50
 #define PASSWORD_MAX 50
+#define MAX 100
 
 typedef struct {
     int length;
@@ -40,12 +41,13 @@ void setLowercase(Password *password);
 void setNumbers(Password *password);
 void setSymbols(Password *password);
 
-int verificationLength(int *length);
-int veryWeak(int *lenght);
-int weak(int *lenght);
-int good(int *lenght);
-int strong(int *lenght);
-int veryStrong(int *lenght);
+int verificationLength(int length);
+int veryWeak(int lenght);
+int weak(int lenght);
+int good(int lenght);
+int strong(int lenght);
+int veryStrong(int lenght);
+int contains(int input);
 int passwordStrength(Password *password);
 
 char *generatePassword(Password *password);
@@ -53,7 +55,7 @@ char *allowedCharacters(Password *password);
 
 void noticeOfExit(Password *password);
 int recommendation(Password *password);
-int generateNewPassword(Password *password, char *generatedPassword);
+void generateNewPassword(Password *password, char *generatedPassword);
 
 int main() { 
     setlocale(LC_ALL, "Portuguese");
@@ -164,31 +166,31 @@ void setSymbols(Password *password) {
     } while(!contains(password->symbols));
 }
 
-int verificationLength(int *length) {
+int verificationLength(int length) {
     return (length <= FALSE || length > PASSWORD_MAX) ? FALSE : TRUE;
 }
 
-int veryWeak(int *lenght) {
+int veryWeak(int lenght) {
     return (lenght >= VERYWEAK_MIN && lenght <= VERYWEAK_MAX) ? TRUE : FALSE;
 }
 
-int weak(int *lenght) {
+int weak(int lenght) {
     return (lenght >= WEAK_MIN && lenght <= WEAK_MAX) ? TRUE : FALSE;
 }
 
-int good(int *lenght) {
+int good(int lenght) {
     return (lenght >= GOOD_MIN && lenght <= GOOD_MAX) ? TRUE : FALSE;
 }
 
-int strong(int *lenght) {
+int strong(int lenght) {
     return (lenght >= STRONG_MIN && lenght <= STRONG_MAX) ? TRUE : FALSE;
 }
 
-int veryStrong(int *lenght) {
+int veryStrong(int lenght) {
     return (lenght >= VERYSTRONG_MIN && lenght <= VERYSTRONG_MAX) ? TRUE : FALSE;
 }
 
-int contains(int *input) {
+int contains(int input) {
     return (input == TRUE || input == FALSE) ? TRUE : FALSE;
 }
 
@@ -228,7 +230,10 @@ char *generatePassword(Password *password) {
         exit(TRUE);
     }
 
-    strcpy(generatedPassword, allowedCharacters(password));
+    char *passwordRand = allowedCharacters(password);
+    strcpy(generatedPassword, passwordRand);
+    free(passwordRand);
+
     return generatedPassword;
 }   
 
@@ -238,7 +243,7 @@ char *allowedCharacters(Password *password) {
     const char numbers[] = "0123456789";
     const char symbols[] = "!@#$%&*()_+=-{}[]:;?/|";
 
-    char allowedCharacters[100] = "";
+    char allowedCharacters[MAX] = "";
 
     if(password->uppercase)
         strcat(allowedCharacters, uppercase);
@@ -253,7 +258,14 @@ char *allowedCharacters(Password *password) {
     for(int i = 0; i < password->length; i++) 
         allowedCharacters[i] = allowedCharacters[rand() % strlen(allowedCharacters)];
 
-    return allowedCharacters;
+    char *result = (char *) malloc(sizeof(char) * password->length);
+    if(result == NULL) {
+        fprintf(stderr, "Erro ao gerar senha!\n");
+        exit(TRUE);
+    }
+
+    strcpy(result, allowedCharacters);
+    return result;
 }
 
 void noticeOfExit(Password *password) {
@@ -282,11 +294,10 @@ int recommendation(Password *password) {
         exit(TRUE);
     }
 
-    int strength = passwordStrength(password);
-    return (strength == VERYSTRONG || strength == STRONG) ? FALSE : TRUE;
+    return (passwordStrength(password) >= STRONG) ? FALSE : TRUE;
 }
 
-int generateNewPassword(Password *password, char *generatedPassword) {
+void generateNewPassword(Password *password, char *generatedPassword) {
     int option;
 
     if(password == NULL) {
@@ -302,7 +313,10 @@ int generateNewPassword(Password *password, char *generatedPassword) {
         if(option) {
             printf("Gerando nova senha...\n");
             password->length = DEFAULT;
-            generatedPassword = generatePassword(password);
+
+            char *newPassword = generatePassword(password);
+            strcpy(generatedPassword, newPassword);
+            free(newPassword);
         }
         else 
             break;
